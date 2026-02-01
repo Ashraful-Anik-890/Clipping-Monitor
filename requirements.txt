@@ -1,0 +1,5 @@
+pywin32
+pystray==0.19.5
+Pillow
+psutil
+cryptography==42.0.2
