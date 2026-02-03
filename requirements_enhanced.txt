@@ -1,0 +1,26 @@
+# Enhanced Clipboard Monitor - Requirements
+
+# Core Dependencies (existing)
+pywin32             # Windows API access (clipboard, GUI, task scheduler)
+pystray           # System tray icon
+Pillow            # Image processing for tray icon
+psutil             # Process monitoring and system info
+cryptography      # Encryption for clipboard logs
+
+# Screen Recording (NEW)
+mss                # Ultra-fast screen capture (C-optimized)
+opencv-python      # Video encoding (H.264 support)
+numpy             # Array operations for image processing
+
+# Database (built-in, no install)
+# sqlite3                 # Video indexing and correlation
+
+# Optional: Enhanced Features
+# opencv-contrib-python   # Extended OpenCV features (if needed)
+# av>=10.0.0             # PyAV for FFmpeg bindings (advanced encoding)
+
+# Development Dependencies
+# PyInstaller>=5.13.0    # For building executable
+# pytest>=7.4.0          # For testing
+# black>=23.0.0          # Code formatting
+# flake8>=6.0.0          # Linting
