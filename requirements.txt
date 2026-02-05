@@ -1,5 +1,25 @@
+# Enterprise Monitoring Agent - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Windows API Access
 pywin32
-pystray==0.19.5
-Pillow
+
+# System monitoring
 psutil
-cryptography==42.0.2
+
+# Encryption
+cryptography
+
+# System tray icon
+pystray
+Pillow
+
+# HTTP requests (for future server sync)
+requests
+
+# Build tools (development only)
+pyinstaller
+
+# Testing (development only)
+pytest
+pytest-cov

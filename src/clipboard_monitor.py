@@ -9,6 +9,7 @@ from typing import Optional, Callable, Dict, Any, List
 import logging
 import os
 import win32process
+from enterprise.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 

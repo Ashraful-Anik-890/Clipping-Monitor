@@ -2,6 +2,8 @@ import pystray
 from PIL import Image, ImageDraw
 from typing import Callable
 import logging
+from enterprise.service_core import ServiceController
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ class TrayIcon:
         self.on_quit = on_quit
         self.icon = None
         self.is_monitoring = False
+        self.service_controller = ServiceController()
     
     def create_icon_image(self) -> Image.Image:
         """Create a simple icon image"""
@@ -51,7 +54,9 @@ class TrayIcon:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", self.on_quit)
         )
-    
+    def on_start(self):
+        self.service_controller.start_service()
+
     def run(self):
         """Run the tray icon"""
         image = self.create_icon_image()
@@ -67,3 +72,4 @@ class TrayIcon:
         """Stop the tray icon"""
         if self.icon:
             self.icon.stop()
+            self.service_controller.stop_service()
