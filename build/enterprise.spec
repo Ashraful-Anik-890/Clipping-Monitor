@@ -1,14 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
 
 block_cipher = None
 
+# Absolute paths
+ROOT_DIR = Path(r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor')
+SRC_DIR = ROOT_DIR / 'src'
+ENTERPRISE_DIR = SRC_DIR / 'enterprise'
+RESOURCES_DIR = ROOT_DIR / 'resources'
+
 # Service executable
 service_a = Analysis(
-    ['src/enterprise/service_core.py'],
-    pathex=['src', 'src/enterprise'],
+    [r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor\src\enterprise\service_core.py'],
+    pathex=[r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor\src', r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor\src\enterprise'],
     binaries=[],
     datas=[
-        ('resources', 'resources') if Path('resources').exists() else ([], []),
+        (str(RESOURCES_DIR), 'resources') if RESOURCES_DIR.exists() else ([], []),
     ],
     hiddenimports=[
         'win32serviceutil',
@@ -25,6 +32,8 @@ service_a = Analysis(
         'cryptography',
         'cryptography.fernet',
         'sqlite3',
+        'pynput',
+        'pynput.keyboard',
     ],
     hookspath=[],
     hooksconfig={},
@@ -58,11 +67,11 @@ service_exe = EXE(
 
 # Admin Console executable
 admin_a = Analysis(
-    ['src/enterprise/admin_console.py'],
-    pathex=['src', 'src/enterprise'],
+    [r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor\src\enterprise\admin_console.py'],
+    pathex=[r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor\src', r'D:\Codes\Skillers_Zone_LTD\Clipping-Monitor\src\enterprise'],
     binaries=[],
     datas=[
-        ('resources', 'resources') if Path('resources').exists() else ([], []),
+        (str(RESOURCES_DIR), 'resources') if RESOURCES_DIR.exists() else ([], []),
     ],
     hiddenimports=[
         'tkinter',
@@ -70,6 +79,7 @@ admin_a = Analysis(
         'tkinter.messagebox',
         'tkinter.filedialog',
         'tkinter.scrolledtext',
+        'tkinter.simpledialog',
         'win32security',
         'win32api',
         'win32con',
@@ -107,7 +117,7 @@ admin_exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     uac_admin=True,
-    icon='resources/icon.ico' if Path('resources/icon.ico').exists() else None,
+    icon=str(RESOURCES_DIR / 'icon.ico') if (RESOURCES_DIR / 'icon.ico').exists() else None,
 )
 
 # Collect all

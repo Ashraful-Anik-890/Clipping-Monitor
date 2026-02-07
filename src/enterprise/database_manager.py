@@ -405,7 +405,7 @@ class DatabaseManager:
             except Exception as e:
                 logger.error(f"Error logging system event: {e}")
     
-    def get_events(self, table: str, start_date: datetime = None, end_date: datetime = None, 
+    def get_events(self, table: str, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None, 
                    limit: int = 1000) -> List[Dict]:
         """
         Retrieve events from database.
@@ -502,8 +502,8 @@ class DatabaseManager:
                 logger.error(f"Error getting statistics: {e}")
                 return {}
     
-    def export_to_json(self, output_path: Path, table_name: str = None, 
-                       start_date: datetime = None, end_date: datetime = None):
+    def export_to_json(self, output_path: Path, table_name: Optional[str] = None, 
+                       start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
         """
         Export data to JSON file.
         
@@ -581,7 +581,7 @@ class DatabaseManager:
                 logger.error(f"Error exporting to JSON: {e}")
                 raise
     
-    def export_to_csv(self, output_dir: Path, start_date: datetime = None, end_date: datetime = None):
+    def export_to_csv(self, output_dir: Path, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
         """
         Export each table to separate CSV files.
         

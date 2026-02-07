@@ -5,7 +5,7 @@ Protected admin console for controlling the monitoring service.
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog, scrolledtext
+from tkinter import ttk, messagebox, filedialog, scrolledtext, simpledialog
 from pathlib import Path
 import sys
 import logging
@@ -33,23 +33,58 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
+def is_admin():
+    """Check if running with administrator privileges"""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except Exception:
+        return False
 
+
+def request_uac_elevation():
+    """Request UAC elevation and restart"""
+    try:
+        from win32com.shell.shell import ShellExecuteEx
+        from win32com.shell import shellcon
+        import win32con
+        
+        # Get script path
+        if getattr(sys, 'frozen', False):
+            script = sys.executable
+            params = ''
+        else:
+            script = sys.executable
+            params = f'"{Path(__file__).absolute()}"'
+        
+        # Request elevation
+        ShellExecuteEx(
+            nShow=win32con.SW_SHOWNORMAL,
+            fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
+            lpVerb='runas',
+            lpFile=script,
+            lpParameters=params
+        )
+        
+    except Exception as e:
+        print(f"UAC elevation error: {e}")
+        raise
 class AdminLoginDialog:
     """Admin authentication dialog"""
     
     def __init__(self, auth_manager: AdminAuthManager):
         self.auth_manager = auth_manager
         self.authenticated = False
+        self.is_setup_mode = not self.auth_manager.get_credential_info().get('exists', False)
         
         self.root = tk.Tk()
-        self.root.title("Admin Authentication Required")
-        self.root.geometry("450x250")
+        self.root.title("Admin Authentication Required" if not self.is_setup_mode else "Setup Administrator")
+        self.root.geometry("450x300" if self.is_setup_mode else "450x250")
         self.root.resizable(False, False)
         
         # Center window
         self.root.update_idletasks()
         x = (self.root.winfo_screenwidth() // 2) - 225
-        y = (self.root.winfo_screenheight() // 2) - 125
+        y = (self.root.winfo_screenheight() // 2) - 150
         self.root.geometry(f"+{x}+{y}")
         
         # Set window icon (optional)
@@ -63,55 +98,107 @@ class AdminLoginDialog:
         self._create_ui()
     
     def _create_ui(self):
-        """Create login UI"""
+        """Create login or setup UI"""
         # Header
         header_frame = tk.Frame(self.root, bg="#34495e", height=70)
         header_frame.pack(fill=tk.X)
         header_frame.pack_propagate(False)
         
+        header_text = "🔒 Administrator Access" if not self.is_setup_mode else "🛡️ Setup Administrator"
+        
         tk.Label(
             header_frame,
-            text="🔒 Administrator Access",
+            text=header_text,
             font=("Arial", 16, "bold"),
             bg="#34495e",
             fg="white"
         ).pack(pady=20)
         
-        # Login form
+        # Form
         form_frame = tk.Frame(self.root, padx=40, pady=20)
         form_frame.pack(fill=tk.BOTH, expand=True)
         
-        tk.Label(
-            form_frame,
-            text="Password:",
-            font=("Arial", 11)
-        ).grid(row=0, column=0, sticky='w', pady=10)
-        
-        self.password_entry = tk.Entry(
-            form_frame,
-            show="●",
-            width=30,
-            font=("Arial", 11)
-        )
-        self.password_entry.grid(row=0, column=1, pady=10, padx=10)
-        self.password_entry.bind('<Return>', lambda e: self.verify())
-        
-        # Buttons
-        btn_frame = tk.Frame(form_frame)
-        btn_frame.grid(row=1, column=0, columnspan=2, pady=20)
-        
-        tk.Button(
-            btn_frame,
-            text="Login",
-            command=self.verify,
-            width=12,
-            height=2,
-            bg="#27ae60",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            cursor="hand2"
-        ).pack(side=tk.LEFT, padx=5)
-        
+        if self.is_setup_mode:
+            # Registration Mode
+            tk.Label(
+                form_frame,
+                text="New Password:",
+                font=("Arial", 11)
+            ).grid(row=0, column=0, sticky='w', pady=10)
+            
+            self.new_password_entry = tk.Entry(
+                form_frame,
+                show="●",
+                width=30,
+                font=("Arial", 11)
+            )
+            self.new_password_entry.grid(row=0, column=1, pady=10, padx=10)
+            
+            tk.Label(
+                form_frame,
+                text="Confirm Password:",
+                font=("Arial", 11)
+            ).grid(row=1, column=0, sticky='w', pady=10)
+            
+            self.confirm_password_entry = tk.Entry(
+                form_frame,
+                show="●",
+                width=30,
+                font=("Arial", 11)
+            )
+            self.confirm_password_entry.grid(row=1, column=1, pady=10, padx=10)
+            self.confirm_password_entry.bind('<Return>', lambda e: self.create_admin())
+            
+            # Buttons for Setup
+            btn_frame = tk.Frame(form_frame)
+            btn_frame.grid(row=2, column=0, columnspan=2, pady=20)
+            
+            tk.Button(
+                btn_frame,
+                text="Create Account",
+                command=self.create_admin,
+                width=15,
+                height=2,
+                bg="#27ae60",
+                fg="white",
+                font=("Arial", 10, "bold"),
+                cursor="hand2"
+            ).pack(side=tk.LEFT, padx=5)
+            
+        else:
+            # Login Mode
+            tk.Label(
+                form_frame,
+                text="Password:",
+                font=("Arial", 11)
+            ).grid(row=0, column=0, sticky='w', pady=10)
+            
+            self.password_entry = tk.Entry(
+                form_frame,
+                show="●",
+                width=30,
+                font=("Arial", 11)
+            )
+            self.password_entry.grid(row=0, column=1, pady=10, padx=10)
+            self.password_entry.bind('<Return>', lambda e: self.verify())
+            
+            # Buttons for Login
+            btn_frame = tk.Frame(form_frame)
+            btn_frame.grid(row=1, column=0, columnspan=2, pady=20)
+            
+            tk.Button(
+                btn_frame,
+                text="Login",
+                command=self.verify,
+                width=12,
+                height=2,
+                bg="#27ae60",
+                fg="white",
+                font=("Arial", 10, "bold"),
+                cursor="hand2"
+            ).pack(side=tk.LEFT, padx=5)
+            
+        # Cancel Button (Common)
         tk.Button(
             btn_frame,
             text="Cancel",
@@ -124,18 +211,260 @@ class AdminLoginDialog:
             cursor="hand2"
         ).pack(side=tk.LEFT, padx=5)
         
-        # Initial password hint
-        initial_file = self.auth_manager.config_dir / 'ADMIN_INITIAL_PASSWORD.txt'
-        if initial_file.exists():
-            tk.Label(
-                form_frame,
-                text="ℹ️ Check ADMIN_INITIAL_PASSWORD.txt for first-time password",
-                font=("Arial", 8),
-                fg="#7f8c8d"
-            ).grid(row=2, column=0, columnspan=2, pady=5)
-        
-        self.password_entry.focus()
+        # Initial focus
+        if self.is_setup_mode:
+            self.new_password_entry.focus()
+        else:
+            self.password_entry.focus()
+            
+            # Initial password hint (Only show if file exists AND in login mode)
+            initial_file = self.auth_manager.config_dir / 'ADMIN_INITIAL_PASSWORD.txt'
+            if initial_file.exists():
+                tk.Label(
+                    form_frame,
+                    text="ℹ️ Check ADMIN_INITIAL_PASSWORD.txt for first-time password",
+                    font=("Arial", 8),
+                    fg="#7f8c8d"
+                ).grid(row=2, column=0, columnspan=2, pady=5)
     
+    def create_admin(self):
+        """Create new admin account"""
+        p1 = self.new_password_entry.get()
+        p2 = self.confirm_password_entry.get()
+        
+        if not p1 or not p2:
+            messagebox.showwarning("Warning", "Please enter both passwords", parent=self.root)
+            return
+            
+        if p1 != p2:
+            messagebox.showerror("Error", "Passwords do not match", parent=self.root)
+            return
+            
+        if len(p1) < 8:
+            messagebox.showwarning("Warning", "Password must be at least 8 characters", parent=self.root)
+            return
+        
+        if self.auth_manager.set_admin_password(p1):
+            messagebox.showinfo("Success", "Administrator account created successfully!", parent=self.root)
+            self.authenticated = True
+            self.root.destroy()
+        else:
+            messagebox.showerror("Error", "Failed to create administrator account", parent=self.root)
+    
+    def _create_keystroke_tab(self):
+        """Create keystroke export tab"""
+        frame = tk.LabelFrame(
+            self.keystroke_tab,
+            text="⚠️ Keystroke Data Export (Admin Only)",
+            padx=20,
+            pady=20,
+            font=("Arial", 11, "bold"),
+            fg="red"
+        )
+        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Warning
+        warning_label = tk.Label(
+            frame,
+            text="⚠️ SENSITIVE DATA: Keystroke logs contain sensitive information.\n"
+                "Only export when necessary for security audits.\n"
+                "All exports are logged and require admin authentication.",
+            font=("Arial", 10),
+            fg="red",
+            justify=tk.LEFT
+        )
+        warning_label.pack(pady=20)
+        
+        # Export buttons
+        btn_frame = tk.Frame(frame)
+        btn_frame.pack(pady=20)
+        
+        tk.Button(
+            btn_frame,
+            text="📄 Export to JSON (Encrypted)",
+            command=lambda: self.export_keystrokes('json', decrypt=False),
+            width=30,
+            height=2,
+            bg="#e74c3c",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            cursor="hand2"
+        ).pack(pady=5)
+        
+        tk.Button(
+            btn_frame,
+            text="📄 Export to JSON (Decrypted)",
+            command=lambda: self.export_keystrokes('json', decrypt=True),
+            width=30,
+            height=2,
+            bg="#c0392b",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            cursor="hand2"
+        ).pack(pady=5)
+        
+        tk.Button(
+            btn_frame,
+            text="📊 Export to CSV",
+            command=lambda: self.export_keystrokes('csv'),
+            width=30,
+            height=2,
+            bg="#e67e22",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            cursor="hand2"
+        ).pack(pady=5)
+        
+        # Statistics display
+        stats_frame = tk.LabelFrame(frame, text="Statistics", padx=15, pady=15)
+        stats_frame.pack(fill=tk.BOTH, expand=True, pady=20)
+        
+        self.keystroke_stats_text = scrolledtext.ScrolledText(
+            stats_frame,
+            width=70,
+            height=10,
+            font=("Courier New", 9),
+            wrap=tk.WORD
+        )
+        self.keystroke_stats_text.pack(fill=tk.BOTH, expand=True)
+        
+        tk.Button(
+            stats_frame,
+            text="🔄 Refresh Statistics",
+            command=self._update_keystroke_statistics,
+            width=20,
+            bg="#3498db",
+            fg="white",
+            font=("Arial", 9),
+            cursor="hand2"
+        ).pack(pady=5)
+        
+        self._update_keystroke_statistics()
+
+    def export_keystrokes(self, format_type: str, decrypt: bool = False):
+        """Export keystroke data"""
+        try:
+            from keystroke_recorder import KeystrokeRecorder
+            from datetime import timedelta
+            
+            # Confirm action
+            if decrypt:
+                if not messagebox.askyesno(
+                    "⚠️ Export Decrypted Data",
+                    "You are about to export DECRYPTED keystroke data.\n\n"
+                    "This will contain plain-text keystrokes.\n\n"
+                    "This action will be logged.\n\nContinue?",
+                    icon='warning'
+                ):
+                    return
+            
+            # Get date range
+            days = simpledialog.askinteger(
+                "Date Range",
+                "Export data from last N days:",
+                initialvalue=7,
+                minvalue=1,
+                maxvalue=90
+            )
+            
+            if not days:
+                return
+            
+            start_date = datetime.now() - timedelta(days=days)
+            
+            # Initialize recorder for export
+            keystroke_dir = Path('C:/ProgramData/EnterpriseMonitoring/data/keystrokes')
+            recorder = KeystrokeRecorder(
+                storage_dir=keystroke_dir,
+                enable_encryption=True
+            )
+            
+            if format_type == 'json':
+                file_path = filedialog.asksaveasfilename(
+                    defaultextension=".json",
+                    filetypes=[("JSON files", "*.json")],
+                    initialfile=f"keystrokes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                )
+                
+                if file_path:
+                    recorder.export_to_json(
+                        Path(file_path),
+                        start_date=start_date,
+                        decrypt=decrypt
+                    )
+                    messagebox.showinfo("Success", f"Keystrokes exported to:\n{file_path}")
+            
+            elif format_type == 'csv':
+                file_path = filedialog.asksaveasfilename(
+                    defaultextension=".csv",
+                    filetypes=[("CSV files", "*.csv")],
+                    initialfile=f"keystrokes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                )
+                
+                if file_path:
+                    recorder.export_to_csv(
+                        Path(file_path),
+                        start_date=start_date
+                    )
+                    messagebox.showinfo("Success", f"Keystrokes exported to:\n{file_path}")
+            
+            # Log export action
+            self.database.log_system_event(
+                event_type='keystroke_export',
+                severity='WARNING',
+                message=f'Keystroke data exported by admin (decrypt={decrypt}, format={format_type})',
+                details={'days': days, 'decrypt': decrypt}
+            )
+            
+        except Exception as e:
+            logger.error(f"Keystroke export error: {e}")
+            messagebox.showerror("Error", f"Failed to export keystrokes:\n{e}")
+
+    def _update_keystroke_statistics(self):
+        """Update keystroke statistics display"""
+        try:
+            from keystroke_recorder import KeystrokeRecorder
+            
+            keystroke_dir = Path('C:/ProgramData/EnterpriseMonitoring/data/keystrokes')
+            recorder = KeystrokeRecorder(
+                storage_dir=keystroke_dir,
+                enable_encryption=True
+            )
+            
+            stats = recorder.get_statistics()
+            
+            stats_text = f"""
+    {'='*70}
+    KEYSTROKE STATISTICS
+    {'='*70}
+
+    Database Information:
+    Location: {stats.get('database_path', 'N/A')}
+    
+    Recording Status:
+    Currently Recording: {stats.get('is_recording', False)}
+    Current Session: {stats.get('total_keystrokes_session', 0)} keystrokes
+    Buffer Size: {stats.get('buffer_size', 0)} events
+    
+    Historical Data:
+    Total Keystrokes (DB): {stats.get('total_keystrokes_db', 0):,}
+    Earliest Event: {stats.get('earliest_event', 'N/A')}
+    Latest Event: {stats.get('latest_event', 'N/A')}
+
+    Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+    {'='*70}
+            """
+            
+            self.keystroke_stats_text.delete(1.0, tk.END)
+            self.keystroke_stats_text.insert(1.0, stats_text.strip())
+            
+        except Exception as e:
+            logger.error(f"Error updating keystroke statistics: {e}")
+            error_text = f"Error loading statistics:\n{str(e)}"
+            self.keystroke_stats_text.delete(1.0, tk.END)
+            self.keystroke_stats_text.insert(1.0, error_text)
+        
     def verify(self):
         """Verify password and login"""
         password = self.password_entry.get()
@@ -169,7 +498,6 @@ class AdminLoginDialog:
         """Show dialog and return authentication result"""
         self.root.mainloop()
         return self.authenticated
-
 
 class ServiceController:
     """Windows service controller"""
@@ -231,6 +559,82 @@ class ServiceController:
             logger.error(f"Error restarting service: {e}")
             return False
 
+    def install_service(self) -> bool:
+        """Install the service"""
+        try:
+            import subprocess
+            import sys
+            
+            # Determine path to service script
+            if getattr(sys, 'frozen', False):
+                # If running as compiled exe, we assume duplicate exe for service or same exe with arguments
+                # For this setup, we'll assume there is a separate 'EnterpriseMonitoringService.exe'
+                service_exe = Path(sys.executable).parent / "EnterpriseMonitoringService.exe"
+                cmd = [str(service_exe), "install"]
+            else:
+                # Running as script
+                service_script = Path(__file__).parent / "service_main.py"
+                cmd = [sys.executable, str(service_script), "install"]
+            
+            logger.info(f"Installing service with command: {cmd}")
+            
+            # Run installation command
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            
+            if result.returncode == 0:
+                logger.info("Service installed successfully")
+                return True
+            else:
+                logger.error(f"Failed to install service: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error installing service: {e}")
+            return False
+
+    def remove_service(self) -> bool:
+        """Remove the service"""
+        try:
+            import subprocess
+            import sys
+            
+            # Determine path to service script/exe
+            if getattr(sys, 'frozen', False):
+                service_exe = Path(sys.executable).parent / "EnterpriseMonitoringService.exe"
+                cmd = [str(service_exe), "remove"]
+            else:
+                service_script = Path(__file__).parent / "service_main.py"
+                cmd = [sys.executable, str(service_script), "remove"]
+            
+            logger.info(f"Removing service with command: {cmd}")
+            
+            # Run removal command
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            
+            if result.returncode == 0:
+                logger.info("Service removed successfully")
+                return True
+            else:
+                # 1060 means service doesn't exist, which is fine for removal
+                if "1060" in result.stderr:
+                    return True
+                logger.error(f"Failed to remove service: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error removing service: {e}")
+            return False
+
 
 class AdminConsole:
     """Main admin console application"""
@@ -238,20 +642,19 @@ class AdminConsole:
     def __init__(self):
         # Check UAC elevation
         if not is_admin():
-            # Hide the root window so we just see the error
-            temp_root = tk.Tk()
-            temp_root.withdraw() 
-            messagebox.showerror(
-                "Administrator Privileges Required",
-                "CRITICAL ERROR: Access Denied.\n\n"
-                "This application interacts with system services and writes to "
-                "C:\\ProgramData. It MUST be run as Administrator.\n\n"
-                "Please right-click the application and select 'Run as Administrator'."
-            )
-            temp_root.destroy()
-            sys.exit(1) # Stop here. Do not try to auto-restart.
-        
-        # Initialize components
+            print("Requesting administrator privileges...")
+            try:
+                request_uac_elevation()
+            except Exception as e:
+                logger.error(f"Failed to request UAC elevation: {e}")
+            # If we get here, elevation was cancelled
+            sys.exit(1)
+
+    
+    # If we get here, we ARE admin - continue normally
+        print("Running with administrator privileges ✓")
+    
+    # Initialize components
         config_dir = Path.home() / ".clipboard_monitor"
         config_dir.mkdir(parents=True, exist_ok=True)
         
@@ -263,6 +666,8 @@ class AdminConsole:
         if not login_dialog.show():
             logger.info("Authentication cancelled")
             sys.exit(0)
+        
+
         
         # Initialize service controller
         self.service_controller = ServiceController()
@@ -375,6 +780,18 @@ class AdminConsole:
         
         tk.Button(
             btn_frame,
+            text="➕ Install Service",
+            command=self.install_service,
+            width=15,
+            height=2,
+            bg="#2980b9",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            cursor="hand2"
+        ).pack(side=tk.LEFT, padx=10)
+
+        tk.Button(
+            btn_frame,
             text="▶️ Start Service",
             command=self.start_service,
             width=15,
@@ -408,6 +825,18 @@ class AdminConsole:
             font=("Arial", 11, "bold"),
             cursor="hand2"
         ).pack(side=tk.LEFT, padx=10)
+
+        tk.Button(
+            btn_frame,
+            text="❌ Remove Service",
+            command=self.remove_service,
+            width=15,
+            height=2,
+            bg="#c0392b",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            cursor="hand2"
+        ).pack(side=tk.LEFT, padx=10)
         
         # Service info
         info_frame = tk.LabelFrame(frame, text="Service Information", padx=15, pady=15)
@@ -423,6 +852,23 @@ class AdminConsole:
         self.service_info_text.pack(fill=tk.BOTH, expand=True)
         
         self._update_service_info()
+
+    def install_service(self):
+        """Install service"""
+        if self.service_controller.install_service():
+            messagebox.showinfo("Success", "Service installed successfully")
+            self._update_status()
+        else:
+            messagebox.showerror("Error", "Failed to install service")
+            
+    def remove_service(self):
+        """Remove service"""
+        if messagebox.askyesno("Confirm Removal", "Are you sure you want to remove the monitoring service?"):
+            if self.service_controller.remove_service():
+                messagebox.showinfo("Success", "Service removed successfully")
+                self._update_status()
+            else:
+                messagebox.showerror("Error", "Failed to remove service")
     
     def _create_stats_tab(self):
         """Create statistics tab"""

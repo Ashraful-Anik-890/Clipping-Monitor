@@ -66,8 +66,8 @@ class AdminAuthManager:
         self.cipher = self._init_encryption()
         
         # Initialize admin credentials if not exists
-        if not self.auth_file.exists():
-            self._create_default_admin()
+        # if not self.auth_file.exists():
+        #     self._create_default_admin()
         
         logger.info("Admin authentication manager initialized")
     
