@@ -6,12 +6,12 @@ import logging
 
 # Import centralized path management
 try:
-    from enterprise.paths import get_database_path, get_user_config_dir
+    from enterprise.paths import get_database_path, get_config_dir
 except ImportError:
     # Fallback for development
     import sys
     sys.path.insert(0, str(Path(__file__).parent))
-    from paths import get_database_path, get_user_config_dir
+    from paths import get_database_path, get_config_dir
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +63,19 @@ class Config:
     }
     
     def __init__(self):
+        """
+        Initialize configuration manager.
+        
+        Uses get_config_dir() which points to C:\ProgramData\EnterpriseMonitoring\config
+        This allows the service to run as SYSTEM without needing user profile access.
+        """
         try:
-            self.config_dir = get_user_config_dir()
+            self.config_dir = get_config_dir()
         except Exception as e:
-            logger.warning(f"Could not get user config dir: {e}")
-            self.config_dir = Path.home() / ".clipboard_monitor"
+            logger.warning(f"Could not get config dir: {e}")
+            # Fallback to ProgramData if get_config_dir fails
+            program_data = os.environ.get('PROGRAMDATA', 'C:/ProgramData')
+            self.config_dir = Path(program_data) / 'EnterpriseMonitoring' / 'config'
             self.config_dir.mkdir(parents=True, exist_ok=True)
         
         self.config_file = self.config_dir / "config.json"
