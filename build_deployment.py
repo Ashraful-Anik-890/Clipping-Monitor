@@ -159,10 +159,10 @@ class EnterpriseBuilder:
             return False
     
     def _generate_pyinstaller_spec(self):
-        """Generate PyInstaller spec file with absolute paths"""
+        """Generate PyInstaller spec file with absolute paths and correct entry points"""
         
         # Get absolute paths
-        service_script = str(self.config.ENTERPRISE_DIR / "service_core.py")
+        service_script = str(self.config.ENTERPRISE_DIR / "service_main.py")  # FIXED: Use service_main.py
         admin_script = str(self.config.ENTERPRISE_DIR / "admin_console.py")
         src_dir = str(self.config.SRC_DIR)
         enterprise_dir = str(self.config.ENTERPRISE_DIR)
@@ -201,14 +201,22 @@ service_a = Analysis(
         'psutil',
         'cryptography',
         'cryptography.fernet',
+        'cryptography.hazmat.primitives.ciphers',
+        'cryptography.hazmat.backends',
         'sqlite3',
         'pynput',
         'pynput.keyboard',
+        'pynput._util.win32',
+        'enterprise.paths',
+        'enterprise.config',
+        'enterprise.keystroke_recorder',
+        'enterprise.database_manager',
+        'enterprise.service_core',
     ],
     hookspath=[],
     hooksconfig={{}},
     runtime_hooks=[],
-    excludes=['matplotlib', 'numpy', 'pandas', 'scipy'],
+    excludes=['matplotlib', 'numpy', 'pandas', 'scipy', 'jupyter', 'IPython'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -254,14 +262,21 @@ admin_a = Analysis(
         'win32api',
         'win32con',
         'win32serviceutil',
+        'win32com.shell.shell',
+        'win32com.shell',
         'cryptography',
         'cryptography.fernet',
         'sqlite3',
+        'enterprise.paths',
+        'enterprise.config',
+        'enterprise.admin_auth',
+        'enterprise.database_manager',
+        'enterprise.keystroke_recorder',
     ],
     hookspath=[],
     hooksconfig={{}},
     runtime_hooks=[],
-    excludes=['matplotlib', 'numpy', 'pandas', 'scipy'],
+    excludes=['matplotlib', 'numpy', 'pandas', 'scipy', 'jupyter', 'IPython'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

@@ -87,7 +87,9 @@ class DatabaseManager:
                         win32con.FILE_ATTRIBUTE_HIDDEN | win32con.FILE_ATTRIBUTE_SYSTEM
                     )
                 except ImportError:
-                    pass
+                    logger.debug("win32api not available - key file not hidden")
+                except Exception as e:
+                    logger.warning(f"Could not hide key file: {e}")
                 
                 logger.info("Generated new encryption key")
             

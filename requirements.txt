@@ -1,20 +1,21 @@
-
+# Runtime Dependencies for Enterprise Monitoring Agent
 # Install with: pip install -r requirements.txt
 
-# Windows API Access
-pywin32
+# Windows API Access (Windows only)
+pywin32>=305; sys_platform == 'win32'
+
 # System monitoring
-psutil
+psutil>=5.9.0
+
 # Encryption
-cryptography
+cryptography>=41.0.0
+
 # System tray icon
-pystray
-Pillow
+pystray>=0.19.0
+Pillow>=10.0.0
+
+# Keystroke logging
+pynput>=1.7.6
+
 # HTTP requests (for future server sync)
-requests
-# Build tools (development only)
-pyinstaller
-# Testing (development only)
-pytest
-pytest-cov
-pynput
+requests>=2.31.0
