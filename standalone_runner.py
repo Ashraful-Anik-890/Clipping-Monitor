@@ -125,7 +125,7 @@ class MonitoringServiceRunner:
     def __init__(self, config=None):
         self.running = False
         self.threads = []
-        self.config = config
+        self.config = config  # Note: Currently not used by trackers, reserved for future use
         self.logger = logging.getLogger(self.__class__.__name__)
         
     def start(self):

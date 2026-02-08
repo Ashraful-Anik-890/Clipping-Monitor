@@ -18,6 +18,7 @@ def get_config_dir() -> Path:
         Path: Configuration directory path (C:\ProgramData\EnterpriseMonitoring\config)
     """
     if os.name == 'nt':  # Windows
+        # Using forward slashes works on Windows and is cross-platform compatible
         config_dir = Path('C:/ProgramData/EnterpriseMonitoring/config')
     else:  # Linux/Unix fallback
         config_dir = Path('/etc/enterprise-monitoring')
@@ -49,6 +50,7 @@ def get_data_dir() -> Path:
         Path: Data directory path (C:\ProgramData\EnterpriseMonitoring\data)
     """
     if os.name == 'nt':  # Windows
+        # Using forward slashes works on Windows and is cross-platform compatible
         data_dir = Path('C:/ProgramData/EnterpriseMonitoring/data')
     else:  # Linux/Unix fallback
         data_dir = Path('/var/lib/enterprise-monitoring')
@@ -66,6 +68,7 @@ def get_log_dir() -> Path:
         Path: Log directory path (C:\ProgramData\EnterpriseMonitoring\logs)
     """
     if os.name == 'nt':  # Windows
+        # Using forward slashes works on Windows and is cross-platform compatible
         log_dir = Path('C:/ProgramData/EnterpriseMonitoring/logs')
     else:  # Linux/Unix fallback
         log_dir = Path('/var/log/enterprise-monitoring')
