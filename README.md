@@ -7,8 +7,9 @@ A secure, enterprise-grade user activity monitoring agent for Windows. This appl
 **New to this project?** Start here:
 
 1. **[Installation Guide](INSTALLATION.md)** - Complete step-by-step instructions to pull and set up on your device
-2. **[Quick Start](docs/QUICKSTART.md)** - Quick reference for advanced users
-3. **[Enterprise Architecture](docs/ENTERPRISE_ARCHITECTURE.md)** - Technical architecture details
+2. **[Quick Setup](QUICK_SETUP.md)** - Fast track installation (5 minutes)
+3. **[Advanced Implementation](docs/QUICKSTART.md)** - Screen recording and advanced features
+4. **[Enterprise Architecture](docs/ENTERPRISE_ARCHITECTURE.md)** - Technical architecture details
 
 ### Quick Installation
 

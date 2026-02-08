@@ -76,7 +76,7 @@ Before you begin, ensure you have the following installed on your Windows device
 Open **Command Prompt** or **PowerShell** and navigate to where you want to install the application:
 
 ```cmd
-cd C:\Users\YourUsername\Documents
+cd %USERPROFILE%\Documents
 ```
 
 Clone the repository:
@@ -178,7 +178,7 @@ If you're using the enterprise version with the monitoring service:
 **Open Command Prompt as Administrator** (Right-click → Run as administrator), then:
 
 ```cmd
-cd C:\Users\YourUsername\Documents\Clipping-Monitor
+cd %USERPROFILE%\Documents\Clipping-Monitor
 venv\Scripts\activate
 python src/enterprise/admin_console.py
 ```
@@ -200,7 +200,7 @@ python src/enterprise/admin_console.py
 If you're using the basic clipboard monitor:
 
 ```cmd
-cd C:\Users\YourUsername\Documents\Clipping-Monitor
+cd %USERPROFILE%\Documents\Clipping-Monitor
 venv\Scripts\activate
 python src/clipboard_monitor.py
 ```
@@ -229,7 +229,7 @@ The `pythonw` command runs Python scripts without showing a console window.
 2. Or manually add Python to PATH:
    - Search "Environment Variables" in Windows
    - Edit System PATH
-   - Add: `C:\Users\YourUsername\AppData\Local\Programs\Python\Python3xx`
+   - Add: `C:\Users\%USERNAME%\AppData\Local\Programs\Python\Python311` (adjust version as needed)
 
 #### Issue 2: "No module named 'win32com'"
 **Cause**: pywin32 not installed correctly
@@ -255,7 +255,7 @@ python venv\Scripts\pywin32_postinstall.py -install
 **Solution**:
 1. Check that you're in the correct directory:
    ```cmd
-   cd C:\Users\YourUsername\Documents\Clipping-Monitor
+   cd %USERPROFILE%\Documents\Clipping-Monitor
    ```
 2. Verify the file exists:
    ```cmd
@@ -322,7 +322,7 @@ After successful installation:
 To update to the latest version:
 
 ```cmd
-cd C:\Users\YourUsername\Documents\Clipping-Monitor
+cd %USERPROFILE%\Documents\Clipping-Monitor
 git pull origin main
 venv\Scripts\activate
 pip install --upgrade -r requirements.txt
@@ -354,7 +354,7 @@ To completely remove the application:
 
 4. **Remove Data** (optional):
    - Delete: `C:\ProgramData\EnterpriseMonitoring\`
-   - Delete: `C:\Users\YourUsername\.clipboard_monitor\`
+   - Delete: `%USERPROFILE%\.clipboard_monitor\`
 
 ---
 
