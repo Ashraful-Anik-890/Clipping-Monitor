@@ -406,6 +406,27 @@ CREATE INDEX idx_browser ON browser_activity(browser_name);
 3. Review error logs
 4. Test monitors individually
 
+### Issue: Error When Removing Service (Error 1062)
+**Problem**: When running `python service_core.py remove`, you see an error:
+```
+ERROR: Failed to stop service
+(1062, 'ControlService', 'The service has not been started.')
+```
+
+**Solution**: This error has been fixed in the latest version. The service removal code now:
+1. Checks if the service is running before attempting to stop it
+2. Treats "service not started" (error 1062) as a non-error condition
+3. Continues with removal even if the service was not running
+
+**Workaround for older versions**:
+If you're using an older version without the fix, this error is harmless - the service is still removed successfully. You can safely ignore it.
+
+**What was changed**:
+- Modified `stop_service()` to check service status before stopping
+- Added special handling for error code 1062 (service not started)
+- Improved error messages to be more user-friendly
+- The removal process now completes cleanly even when service is not running
+
 ---
 
 ## Support & Resources
