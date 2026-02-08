@@ -2,6 +2,7 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, Any
+from .paths import get_config_dir
 
 class Config:
     """Application configuration manager"""
@@ -53,7 +54,7 @@ class Config:
     }
     
     def __init__(self):
-        self.config_dir = Path.home() / ".clipboard_monitor"
+        self.config_dir = get_config_dir()
         self.config_file = self.config_dir / "config.json"
         self.config: Dict[str, Any] = {}
         self.load()
