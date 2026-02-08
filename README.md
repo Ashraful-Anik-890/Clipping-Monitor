@@ -2,6 +2,36 @@
 
 A secure, enterprise-grade user activity monitoring agent for Windows. This application monitors clipboard usage, application activity, browser history, and keystrokes for compliance and productivity tracking.
 
+## 📋 Getting Started
+
+**New to this project?** Start here:
+
+1. **[Installation Guide](INSTALLATION.md)** - Complete step-by-step instructions to pull and set up on your device
+2. **[Quick Start](docs/QUICKSTART.md)** - Quick reference for advanced users
+3. **[Enterprise Architecture](docs/ENTERPRISE_ARCHITECTURE.md)** - Technical architecture details
+
+### Quick Installation
+
+```cmd
+# 1. Clone the repository
+git clone https://github.com/Ashraful-Anik-890/Clipping-Monitor.git
+cd Clipping-Monitor
+
+# 2. Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run the application (as Administrator)
+python src/enterprise/admin_console.py
+```
+
+📖 **For detailed instructions, see [INSTALLATION.md](INSTALLATION.md)**
+
+---
+
 ## 🚀 Features
 
 ### Core Monitoring
@@ -25,6 +55,8 @@ A secure, enterprise-grade user activity monitoring agent for Windows. This appl
 ---
 
 ## 🛠️ Usage
+
+> **First time?** See the complete [Installation Guide](INSTALLATION.md) for detailed setup instructions.
 
 ### 1. Installation & First Run
 1.  Run the **Admin Console** (`src/enterprise/admin_console.py`).
