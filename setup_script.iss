@@ -123,21 +123,19 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
+  NssmPath: String;
 begin
   Result := '';
   
-  // Check if service already exists and stop it
-  if Exec(ExpandConstant('{app}\nssm.exe'), 'status "{#MyServiceName}"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  // Try to find nssm.exe in system path or check if service exists using sc query
+  if Exec('sc', 'query "{#MyServiceName}"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
     if ResultCode = 0 then
     begin
-      // Service exists, stop it first
-      Exec(ExpandConstant('{app}\nssm.exe'), 'stop "{#MyServiceName}"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      Sleep(2000); // Wait for service to stop
-      
-      // Remove the existing service
-      Exec(ExpandConstant('{app}\nssm.exe'), 'remove "{#MyServiceName}" confirm', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      Sleep(1000); // Wait for service removal
+      // Service exists, try to stop it
+      Log('Service already exists, attempting to stop...');
+      Exec('sc', 'stop "{#MyServiceName}"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Sleep(3000); // Wait for service to stop
     end;
   end;
 end;

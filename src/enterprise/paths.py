@@ -30,7 +30,10 @@ def get_config_dir() -> Path:
 def get_user_config_dir() -> Path:
     """
     Get the user-specific configuration directory.
-    Used for non-service applications.
+    Used for non-service applications (for backward compatibility).
+    
+    Note: This returns the legacy path for compatibility with existing installations.
+    New installations should use get_config_dir() for service compatibility.
     
     Returns:
         Path: User configuration directory path

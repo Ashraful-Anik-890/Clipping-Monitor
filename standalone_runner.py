@@ -80,7 +80,6 @@ def run_service():
         
         # Import the service components
         logger.info("Importing service components...")
-        from enterprise.service_core import EnterpriseMonitoringService
         from enterprise.config import Config
         
         # Load configuration
@@ -93,7 +92,7 @@ def run_service():
         
         # Since we're using NSSM, we don't use win32serviceutil
         # We'll create a simple service runner
-        service = MonitoringServiceRunner()
+        service = MonitoringServiceRunner(config)
         
         # Start the service
         logger.info("Starting service...")
@@ -123,9 +122,10 @@ class MonitoringServiceRunner:
     This class manages the service lifecycle without using win32serviceutil
     """
     
-    def __init__(self):
+    def __init__(self, config=None):
         self.running = False
         self.threads = []
+        self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         
     def start(self):
