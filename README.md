@@ -2,6 +2,33 @@
 
 A secure, enterprise-grade user activity monitoring agent for Windows. This application monitors clipboard usage, application activity, browser history, and keystrokes for compliance and productivity tracking.
 
+## ⭐ NEW: Multiple Reliable Service Installation Methods
+
+**Native Python Windows services can be unreliable**. We now provide **3 proven methods**:
+
+### 🏆 **Method 1: NSSM (Recommended)**
+Uses NSSM (Non-Sucking Service Manager) to wrap Python as a Windows service. **Most reliable.**
+```powershell
+.\install_nssm_service.ps1
+```
+
+### 🏆 **Method 2: Task Scheduler (Also Recommended)**
+Uses Windows Task Scheduler. **No external tools needed.**
+```powershell
+.\install_scheduled_task.ps1
+```
+
+### ⚠️ **Method 3: Native pywin32 Service (Fallback)**
+Traditional Windows service (improved but still less reliable).
+```powershell
+cd src\enterprise
+python service_main.py install
+```
+
+**➡️ See [ALTERNATIVE_SERVICE_METHODS.md](ALTERNATIVE_SERVICE_METHODS.md) for complete guide**
+
+---
+
 ## 🚀 Features
 
 ### Core Monitoring
@@ -41,56 +68,73 @@ A secure, enterprise-grade user activity monitoring agent for Windows. This appl
 
 ## 🔧 Installation
 
-### 1. Clone the Repository
+### Quick Start (3 Steps)
+
+#### 1. Clone and Install Dependencies
 ```bash
 git clone https://github.com/Ashraful-Anik-890/Clipping-Monitor.git
 cd Clipping-Monitor
-```
-
-### 2. Install Dependencies
-```bash
-# Install runtime dependencies
 pip install -r requirements.txt
-
-# For development/building (optional)
-pip install -r requirements-dev.txt
 ```
 
-### 3. Verify Installation
+#### 2. Choose Your Service Installation Method
+
+##### 🏆 **Option A: NSSM (Recommended - Most Reliable)**
+```powershell
+# 1. Download NSSM from https://nssm.cc/download
+# 2. Extract to C:\Tools\nssm\
+# 3. Run installation script (as Administrator)
+.\install_nssm_service.ps1
+```
+
+##### 🏆 **Option B: Task Scheduler (Also Recommended - No External Tools)**
+```powershell
+# Run installation script (as Administrator)
+.\install_scheduled_task.ps1
+```
+
+##### ⚠️ **Option C: Native Windows Service (Fallback)**
+```powershell
+# Run as Administrator
+cd src\enterprise
+python service_main.py install
+python service_main.py start
+```
+
+#### 3. Verify Service is Running
+```powershell
+# For NSSM:
+nssm status EnterpriseMonitoringAgent
+
+# For Task Scheduler:
+Get-ScheduledTask -TaskName "EnterpriseMonitoringAgent" | Get-ScheduledTaskInfo
+
+# For Native Service:
+python src\enterprise\service_main.py status
+```
+
+### Complete Guide
+
+For detailed installation instructions, troubleshooting, and comparison of methods, see:
+**➡️ [ALTERNATIVE_SERVICE_METHODS.md](ALTERNATIVE_SERVICE_METHODS.md)**
+
+### Verify Installation (Optional)
 ```bash
-# Run the verification script to check everything is set up correctly
+# Run the verification script to check dependencies
 python verify_installation.py
 ```
-
-This will check:
-- Python version compatibility
-- Required dependencies
-- Directory structure
-- Module imports
-- Configuration validity
-- Administrator privileges
 
 ---
 
 ## 🛠️ Usage
 
-### 1. First-Time Setup
+### Admin Console
 
-#### Option A: Run from Source (Development)
+The Admin Console provides a GUI for managing the service and viewing data:
+
 ```bash
-# Run the Admin Console
 python src/enterprise/admin_console.py
 ```
-
-#### Option B: Build Executable (Production)
-```bash
-# Build the executables
-python build_deployment.py --all
-
-# Executables will be in: dist/EnterpriseMonitoringAgent/
-```
-
-### 2. Admin Console Setup
 1. **First Run**: You will be prompted to create an Administrator Password.
 2. **Login**: Use your newly created password to access the console.
 3. **Configure**: Review and adjust settings in the configuration file if needed.
@@ -206,34 +250,59 @@ Clipping-Monitor/
 
 ## 🐛 Troubleshooting
 
-### Service Installs but Immediately Crashes (FIXED)
+### Service Won't Start or Keeps Crashing
 
-**Problem**: Service appears to "start" successfully but Error 1062 occurs when trying to stop.
+**⭐ SOLUTION: Use NSSM or Task Scheduler Instead**
 
-**Recent Fix (2024-02-08)**: 
-✅ **RESOLVED** - Fixed incorrect import paths that caused immediate service crash.
-✅ Service now starts successfully and runs continuously.
+Native Python Windows services with pywin32 can be unreliable due to:
+- Import errors when running as service
+- DLL loading issues
+- Startup timeout (Error 1053)
+- Working directory problems
 
-**If still experiencing issues**:
+**Recommended Fix**: Use one of our reliable alternatives:
 
-1. **Test imports first**:
-   ```bash
-   python test_service_imports.py
+1. **NSSM Method** (Best):
+   ```powershell
+   .\install_nssm_service.ps1
    ```
-   This verifies all module imports work correctly.
-
-2. **Check service logs**:
-   ```bash
-   type C:\ProgramData\EnterpriseMonitoring\logs\service.log
-   ```
-   Look for errors during initialization.
-
-3. **Reinstall service** (run as Administrator):
-   ```bash
-   # Remove old service
-   python src\enterprise\service_main.py remove
    
-   # Install fresh
+2. **Task Scheduler Method** (Also Great):
+   ```powershell
+   .\install_scheduled_task.ps1
+   ```
+
+**Complete Guide**: See [ALTERNATIVE_SERVICE_METHODS.md](ALTERNATIVE_SERVICE_METHODS.md)
+
+### If Using Native pywin32 Service
+
+**Recent Fixes (2024-02-08)**: 
+- ✅ Fixed incorrect import paths
+- ✅ Added module-level imports
+- ✅ Graceful import error handling
+- ✅ Better logging
+
+**Test imports first**:
+```bash
+python test_service_imports.py
+```
+
+**Check service logs**:
+```bash
+type C:\ProgramData\EnterpriseMonitoring\logs\service.log
+```
+
+**Reinstall service** (as Administrator):
+```bash
+# Remove old service
+python src\enterprise\service_main.py remove
+
+# Install fresh
+python src\enterprise\service_main.py install
+
+# Start service
+python src\enterprise\service_main.py start
+```
    python src\enterprise\service_main.py install
    
    # Start service
@@ -307,22 +376,23 @@ See **`TROUBLESHOOTING.md`** in the repository root.
 - **Language**: Python 3.8+
 - **Architecture**: Service-based with modular monitors
 - **Status**: Beta - Stable core functionality
-- **Recent Fixes** (2024-02-08):
+- **Recent Updates** (2024-02-08):
+  - ⭐ **NEW**: Added NSSM installation method (most reliable)
+  - ⭐ **NEW**: Added Task Scheduler installation method
+  - ⭐ **NEW**: Created standalone runner (no service API dependencies)
+  - ⭐ **NEW**: Comprehensive guide with all service alternatives
   - ✅ **CRITICAL FIX #1**: Corrected import paths causing immediate service crash
-  - ✅ **CRITICAL FIX #2**: Fixed Error 1063 by removing duplicate entry point from service_core.py
+  - ✅ **CRITICAL FIX #2**: Fixed Error 1063 by removing duplicate entry point
   - ✅ **CRITICAL FIX #3**: Service now uses correct entry point (service_main.py)
-  - ✅ Service now starts and runs continuously without errors
-  - ✅ Fixed hardcoded paths in admin console
-  - ✅ Added service import test script (`test_service_imports.py`)
-  - ✅ Added comprehensive troubleshooting guide (`TROUBLESHOOTING.md`)
-  - ✅ Added service operations guide (`SERVICE_GUIDE.md`)
+  - ✅ Module-level imports (prevents service startup errors)
+  - ✅ Graceful import error handling
+  - ✅ Service now starts and runs continuously
   - ✅ Fixed all path-related issues
   - ✅ Added centralized path management
   - ✅ Implemented graceful monitor degradation
-  - ✅ Fixed service entry point
   - ✅ Added missing keystroke recorder module
   - ✅ Fixed configuration duplicates
-  - ✅ Improved error handling
+  - ✅ Improved error handling and logging
 
 ---
 
