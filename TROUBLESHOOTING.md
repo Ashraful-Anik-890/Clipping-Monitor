@@ -2,7 +2,33 @@
 
 ## Common Service Issues and Solutions
 
-### Issue 1: Service Installs but Immediately Crashes
+### Issue 1: Error 1063 - Service Process Could Not Connect to Service Controller (FIXED)
+
+**Symptoms:**
+- Service installs successfully
+- Service fails to start with Error 1063 or Error 3547
+- Log shows: "Failed to start service dispatcher: (1063, 'StartServiceCtrlDispatcher', 'The service process could not connect to the service controller.')"
+
+**Root Cause:**
+Running `service_core.py` directly instead of `service_main.py`. The service was registered with the wrong entry point.
+
+**Solution (FIXED in latest version):**
+```powershell
+# 1. Remove old service
+python src\enterprise\service_main.py remove
+
+# 2. Reinstall using correct entry point
+python src\enterprise\service_main.py install
+
+# 3. Start service
+net start EnterpriseMonitoringAgent
+```
+
+**IMPORTANT:** Always use `service_main.py` for service operations, never `service_core.py` directly!
+
+---
+
+### Issue 2: Service Installs but Immediately Crashes
 
 **Symptoms:**
 - Service installs successfully
@@ -141,7 +167,7 @@ Should show:
 
 To run service in debug mode (see console output):
 ```bash
-python src\enterprise\service_core.py debug
+python src\enterprise\service_main.py debug
 ```
 
 This will:
@@ -156,6 +182,8 @@ This will:
 
 - **1060**: Service doesn't exist (not installed)
 - **1062**: Service has not been started (crashed or stopped)
+- **1063**: Service process could not connect to service controller (wrong entry point - use `service_main.py` not `service_core.py`)
+- **3547**: Service specific error occurred (check service.log for details)
 - **5**: Access denied (need Administrator)
 - **1053**: Service did not respond (crashed immediately)
 
@@ -197,7 +225,7 @@ net start EnterpriseMonitoringAgent
 
 1. **Check logs first**: Most issues are logged
 2. **Run import test**: `python test_service_imports.py`
-3. **Try debug mode**: `python src\enterprise\service_core.py debug`
+3. **Try debug mode**: `python src\enterprise\service_main.py debug`
 4. **Check Windows Event Viewer**: Application logs for service errors
 5. **Report issue**: Include service.log contents
 
@@ -205,13 +233,15 @@ net start EnterpriseMonitoringAgent
 
 ## Recent Fixes Applied (2024-02-08)
 
+✅ **Fixed Error 1063** - Removed conflicting entry point from service_core.py
 ✅ **Fixed Import Paths** - Service was crashing due to incorrect module imports
 ✅ **Removed Hardcoded Paths** - Now uses environment variables
 ✅ **Added Path Verification** - Service checks paths on startup
 ✅ **Improved Error Handling** - Better logging of initialization errors
+✅ **Proper Service Entry Point** - All service operations now through service_main.py
 
 After these fixes, the service should:
-- Start successfully without crashing
+- Start successfully without Error 1063
 - Run all enabled monitors
 - Log activity properly
 - Be manageable from Admin Console
