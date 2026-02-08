@@ -24,6 +24,12 @@ try:
     from admin_auth import AdminAuthManager, is_admin, request_uac_elevation
     from database_manager import DatabaseManager
     from config import Config
+    from paths import (
+        get_keystroke_storage_dir,
+        get_data_dir,
+        get_logs_dir,
+        get_database_path
+    )
 except ImportError as e:
     print(f"Error importing modules: {e}")
     print(f"Current directory: {Path(__file__).parent}")
@@ -373,7 +379,7 @@ class AdminLoginDialog:
             start_date = datetime.now() - timedelta(days=days)
             
             # Initialize recorder for export
-            keystroke_dir = Path('C:/ProgramData/EnterpriseMonitoring/data/keystrokes')
+            keystroke_dir = get_keystroke_storage_dir()
             recorder = KeystrokeRecorder(
                 storage_dir=keystroke_dir,
                 enable_encryption=True
@@ -425,7 +431,7 @@ class AdminLoginDialog:
         try:
             from keystroke_recorder import KeystrokeRecorder
             
-            keystroke_dir = Path('C:/ProgramData/EnterpriseMonitoring/data/keystrokes')
+            keystroke_dir = get_keystroke_storage_dir()
             recorder = KeystrokeRecorder(
                 storage_dir=keystroke_dir,
                 enable_encryption=True
@@ -673,10 +679,7 @@ class AdminConsole:
         self.service_controller = ServiceController()
         
         # Initialize database
-        data_dir = Path('C:/ProgramData/EnterpriseMonitoring/data')
-        data_dir.mkdir(parents=True, exist_ok=True)
-        
-        db_path = data_dir / 'monitoring.db'
+        db_path = get_database_path()
         self.database = DatabaseManager(db_path, enable_encryption=True)
         
         # Create main window
@@ -1071,8 +1074,8 @@ Monitors user activity including clipboard operations, application usage,
 and browser activity for compliance and productivity tracking.
 
 Configuration:
-- Database: C:/ProgramData/EnterpriseMonitoring/data/monitoring.db
-- Logs: C:/ProgramData/EnterpriseMonitoring/logs/
+- Database: {get_database_path()}
+- Logs: {get_logs_dir()}
 - Startup Type: Automatic
 - Service Account: LocalSystem
 
@@ -1239,8 +1242,7 @@ Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 def main():
     """Main entry point"""
     # Configure logging
-    log_dir = Path('C:/ProgramData/EnterpriseMonitoring/logs')
-    log_dir.mkdir(parents=True, exist_ok=True)
+    log_dir = get_logs_dir()
     
     logging.basicConfig(
         level=logging.INFO,

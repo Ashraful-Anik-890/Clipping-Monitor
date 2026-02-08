@@ -81,11 +81,11 @@ class MonitoringEngine:
         # Import monitoring components
         try:
             from clipboard_monitor import ClipboardMonitor
-            from app_usage_tracker import ApplicationUsageTracker
-            from browser_tracker import BrowserActivityTracker
-            from database_manager import DatabaseManager
-            from keystroke_recorder import KeystrokeRecorder
-            from config import Config
+            from enterprise.app_usage_tracker import ApplicationUsageTracker
+            from enterprise.browser_tracker import BrowserActivityTracker
+            from enterprise.database_manager import DatabaseManager
+            from enterprise.keystroke_recorder import KeystrokeRecorder
+            from enterprise.config import Config
             
             # Load config if not provided
             if self.config is None:
