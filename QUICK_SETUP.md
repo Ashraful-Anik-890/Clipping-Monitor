@@ -12,7 +12,7 @@
 
 ```cmd
 # 1. Open Command Prompt and navigate to your preferred directory
-cd C:\Users\%USERNAME%\Documents
+cd %USERPROFILE%\Documents
 
 # 2. Clone repository
 git clone https://github.com/Ashraful-Anik-890/Clipping-Monitor.git

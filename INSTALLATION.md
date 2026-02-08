@@ -229,7 +229,7 @@ The `pythonw` command runs Python scripts without showing a console window.
 2. Or manually add Python to PATH:
    - Search "Environment Variables" in Windows
    - Edit System PATH
-   - Add: `C:\Users\%USERNAME%\AppData\Local\Programs\Python\Python311` (adjust version as needed)
+   - Add: `%LOCALAPPDATA%\Programs\Python\Python311` (adjust version as needed)
 
 #### Issue 2: "No module named 'win32com'"
 **Cause**: pywin32 not installed correctly
