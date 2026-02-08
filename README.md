@@ -189,26 +189,68 @@ Clipping-Monitor/
 
 ## 🐛 Troubleshooting
 
+### Service Installs but Immediately Crashes (FIXED)
+
+**Problem**: Service appears to "start" successfully but Error 1062 occurs when trying to stop.
+
+**Recent Fix (2024-02-08)**: 
+✅ **RESOLVED** - Fixed incorrect import paths that caused immediate service crash.
+✅ Service now starts successfully and runs continuously.
+
+**If still experiencing issues**:
+
+1. **Test imports first**:
+   ```bash
+   python test_service_imports.py
+   ```
+   This verifies all module imports work correctly.
+
+2. **Check service logs**:
+   ```bash
+   type C:\ProgramData\EnterpriseMonitoring\logs\service.log
+   ```
+   Look for errors during initialization.
+
+3. **Reinstall service** (run as Administrator):
+   ```bash
+   # Remove old service
+   python src\enterprise\service_main.py remove
+   
+   # Install fresh
+   python src\enterprise\service_main.py install
+   
+   # Start service
+   net start EnterpriseMonitoringAgent
+   ```
+
+4. **Verify service is actually running**:
+   ```bash
+   sc query EnterpriseMonitoringAgent
+   ```
+   Should show: `STATE: 4 RUNNING`
+
 ### Service Won't Start
 
 **Problem**: Service fails to start or crashes immediately.
 
 **Solutions**:
 1. Run verification script: `python verify_installation.py`
-2. Check service logs: `C:\ProgramData\EnterpriseMonitoring\logs\service.log`
-3. Ensure all dependencies installed: `pip install -r requirements.txt`
-4. Verify admin privileges
-5. Check Windows Event Viewer for service errors
+2. Run import test: `python test_service_imports.py`
+3. Check service logs: `C:\ProgramData\EnterpriseMonitoring\logs\service.log`
+4. Ensure all dependencies installed: `pip install -r requirements.txt`
+5. Verify admin privileges
+6. Check Windows Event Viewer for service errors
 
 ### Import Errors
 
 **Problem**: `ModuleNotFoundError` or `ImportError`
 
 **Solutions**:
-1. Ensure running correct Python version: `python --version` (must be 3.8+)
-2. Install dependencies: `pip install -r requirements.txt`
-3. On Windows, ensure pywin32 installed: `pip install pywin32`
-4. Run post-install for pywin32: `python -m win32com.client.Makefile -i`
+1. Run import test: `python test_service_imports.py` - will identify which imports fail
+2. Ensure running correct Python version: `python --version` (must be 3.8+)
+3. Install dependencies: `pip install -r requirements.txt`
+4. On Windows, ensure pywin32 installed: `pip install pywin32`
+5. Run post-install for pywin32: `python -m win32com.client.Makefile -i`
 
 ### Path-Related Errors
 
@@ -230,6 +272,16 @@ Clipping-Monitor/
 3. Check individual monitor logs
 4. Ensure no conflicting software (e.g., other clipboard managers)
 
+### Complete Troubleshooting Guide
+
+For comprehensive troubleshooting including:
+- Detailed error code explanations (1060, 1062, 5, 1053)
+- Debug mode instructions  
+- Clean reinstall procedures
+- Log analysis tips
+
+See **`TROUBLESHOOTING.md`** in the repository root.
+
 ---
 
 ## 💻 Development Status
@@ -238,7 +290,12 @@ Clipping-Monitor/
 - **Language**: Python 3.8+
 - **Architecture**: Service-based with modular monitors
 - **Status**: Beta - Stable core functionality
-- **Recent Fixes**:
+- **Recent Fixes** (2024-02-08):
+  - ✅ **CRITICAL FIX**: Corrected import paths causing immediate service crash
+  - ✅ **CRITICAL FIX**: Service now starts and runs continuously without crashing
+  - ✅ Fixed hardcoded paths in admin console
+  - ✅ Added service import test script (`test_service_imports.py`)
+  - ✅ Added comprehensive troubleshooting guide (`TROUBLESHOOTING.md`)
   - ✅ Fixed all path-related issues
   - ✅ Added centralized path management
   - ✅ Implemented graceful monitor degradation
