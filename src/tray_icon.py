@@ -2,7 +2,7 @@ import pystray
 from PIL import Image, ImageDraw
 from typing import Callable
 import logging
-from enterprise.service_core import ServiceController
+from enterprise.admin_console import ServiceController
 
 
 logger = logging.getLogger(__name__)
