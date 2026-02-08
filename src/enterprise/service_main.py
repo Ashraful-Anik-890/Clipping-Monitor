@@ -10,6 +10,7 @@ Usage:
     python service_main.py stop      - Stop the service
     python service_main.py remove    - Remove the service
     python service_main.py restart   - Restart the service
+    python service_main.py status    - Check service status
     python service_main.py debug     - Run in debug mode (not as service)
 """
 
@@ -25,6 +26,7 @@ import time
 from datetime import datetime
 import os
 import subprocess
+import pywintypes
 
 # Add project root to path
 current_dir = Path(__file__).parent
@@ -366,12 +368,103 @@ class EnterpriseMonitoringService(win32serviceutil.ServiceFramework):
 
 
 # ============================================================================
+# SERVICE STATUS HELPERS
+# ============================================================================
+
+def get_service_status():
+    """
+    Get the current status of the service.
+    
+    Returns:
+        tuple: (exists, state, state_name) where:
+            - exists (bool): True if service is installed
+            - state (int): Service state constant (or None if not installed)
+            - state_name (str): Human-readable state name
+    """
+    service_name = EnterpriseMonitoringService._svc_name_
+    
+    try:
+        # Try to query the service
+        status = win32serviceutil.QueryServiceStatus(service_name)
+        state = status[1]
+        
+        # Map state to readable name
+        state_names = {
+            win32service.SERVICE_STOPPED: "STOPPED",
+            win32service.SERVICE_START_PENDING: "START_PENDING",
+            win32service.SERVICE_STOP_PENDING: "STOP_PENDING",
+            win32service.SERVICE_RUNNING: "RUNNING",
+            win32service.SERVICE_CONTINUE_PENDING: "CONTINUE_PENDING",
+            win32service.SERVICE_PAUSE_PENDING: "PAUSE_PENDING",
+            win32service.SERVICE_PAUSED: "PAUSED"
+        }
+        
+        state_name = state_names.get(state, f"UNKNOWN({state})")
+        return True, state, state_name
+        
+    except pywintypes.error as e:
+        # Service doesn't exist or can't be queried
+        error_code = e.winerror
+        if error_code == 1060:  # Service doesn't exist
+            return False, None, "NOT_INSTALLED"
+        else:
+            logger.error(f"Error querying service status: {e}")
+            return False, None, f"ERROR({error_code})"
+    except Exception as e:
+        logger.error(f"Unexpected error querying service status: {e}")
+        return False, None, "ERROR"
+
+
+def is_service_installed():
+    """Check if the service is installed."""
+    exists, _, _ = get_service_status()
+    return exists
+
+
+def is_service_running():
+    """Check if the service is currently running."""
+    exists, state, _ = get_service_status()
+    return exists and state == win32service.SERVICE_RUNNING
+
+
+def print_service_status():
+    """Print the current service status in a user-friendly format."""
+    exists, state, state_name = get_service_status()
+    
+    print(f"\nService Status: {EnterpriseMonitoringService._svc_name_}")
+    print(f"{'─'*60}")
+    
+    if not exists:
+        print(f"  Status: ✗ NOT INSTALLED")
+        print(f"\n  To install the service, run:")
+        print(f"    python service_main.py install")
+    else:
+        status_symbol = "✓" if state == win32service.SERVICE_RUNNING else "○"
+        print(f"  Status: {status_symbol} {state_name}")
+        
+        if state == win32service.SERVICE_RUNNING:
+            print(f"\n  Service is running successfully!")
+            print(f"  To stop: python service_main.py stop")
+        elif state == win32service.SERVICE_STOPPED:
+            print(f"\n  Service is installed but not running.")
+            print(f"  To start: python service_main.py start")
+        else:
+            print(f"\n  Service is in transitional state: {state_name}")
+
+
+# ============================================================================
 # SERVICE MANAGEMENT FUNCTIONS
 # ============================================================================
 
 def install_service():
     """Install the Windows service"""
     try:
+        # Check if already installed
+        if is_service_installed():
+            print("\n⚠ Service is already installed!")
+            print_service_status()
+            return True
+        
         logger.info("Installing service...")
         print("Installing service...")
         
@@ -389,6 +482,8 @@ def install_service():
         print(f"  Service Name: {EnterpriseMonitoringService._svc_name_}")
         print(f"  Display Name: {EnterpriseMonitoringService._svc_display_name_}")
         print(f"\nTo start the service, run:")
+        print(f"  python service_main.py start")
+        print(f"  OR")
         print(f"  net start {EnterpriseMonitoringService._svc_name_}")
         
         return True
@@ -425,36 +520,91 @@ def configure_service_recovery():
 def start_service():
     """Start the service"""
     try:
+        # Check if service is installed
+        if not is_service_installed():
+            logger.error("Cannot start service: Service is not installed")
+            print(f"\n✗ ERROR: Service is not installed")
+            print(f"\nTo install the service, run:")
+            print(f"  python service_main.py install")
+            return False
+        
+        # Check if already running
+        if is_service_running():
+            logger.info("Service is already running")
+            print(f"\n✓ Service is already running!")
+            return True
+        
         logger.info("Starting service...")
         print("Starting service...")
         
         win32serviceutil.StartService(EnterpriseMonitoringService._svc_name_)
         
-        logger.info("Service started successfully")
-        print(f"\n✓ Service started successfully!")
-        print(f"\nTo check service status, run:")
-        print(f"  sc query {EnterpriseMonitoringService._svc_name_}")
+        # Wait a bit for service to start
+        time.sleep(2)
+        
+        # Verify it started
+        if is_service_running():
+            logger.info("Service started successfully")
+            print(f"\n✓ Service started successfully!")
+            print(f"\nTo check service status, run:")
+            print(f"  python service_main.py status")
+            print(f"  OR")
+            print(f"  sc query {EnterpriseMonitoringService._svc_name_}")
+        else:
+            print(f"\n⚠ Service start command sent, but service may not be running")
+            print(f"  Check logs: C:\\ProgramData\\EnterpriseMonitoring\\logs\\service.log")
         
         return True
     except Exception as e:
         logger.error(f"Failed to start service: {e}")
         print(f"\n✗ ERROR: Failed to start service")
         print(f"  {e}")
+        print(f"\nTroubleshooting:")
+        print(f"  1. Check service logs: C:\\ProgramData\\EnterpriseMonitoring\\logs\\service.log")
+        print(f"  2. Try debug mode: python service_main.py debug")
         return False
 
 
 def stop_service():
     """Stop the service"""
     try:
+        # Check if service is installed
+        if not is_service_installed():
+            logger.warning("Cannot stop service: Service is not installed")
+            print(f"\n⚠ Service is not installed (nothing to stop)")
+            return True  # Not an error - service is already "stopped"
+        
+        # Check if service is running
+        exists, state, state_name = get_service_status()
+        
+        if state == win32service.SERVICE_STOPPED:
+            logger.info("Service is already stopped")
+            print(f"\n✓ Service is already stopped")
+            return True
+        
         logger.info("Stopping service...")
         print("Stopping service...")
         
         win32serviceutil.StopService(EnterpriseMonitoringService._svc_name_)
         
+        # Wait for service to stop
+        time.sleep(2)
+        
         logger.info("Service stopped successfully")
         print(f"\n✓ Service stopped successfully!")
         
         return True
+    except pywintypes.error as e:
+        error_code = e.winerror
+        if error_code == 1062:  # Service not started
+            logger.info("Service was already stopped")
+            print(f"\n✓ Service is already stopped")
+            return True
+        else:
+            logger.error(f"Failed to stop service: {e}")
+            print(f"\n✗ ERROR: Failed to stop service")
+            print(f"  {e}")
+            return False
     except Exception as e:
         logger.error(f"Failed to stop service: {e}")
         print(f"\n✗ ERROR: Failed to stop service")
@@ -465,16 +615,22 @@ def stop_service():
 def remove_service():
     """Remove the service"""
     try:
+        # Check if service is installed
+        if not is_service_installed():
+            logger.info("Service is not installed (nothing to remove)")
+            print(f"\n✓ Service is not installed (nothing to remove)")
+            return True
+        
         logger.info("Removing service...")
         print("Removing service...")
         
-        # Stop service first
-        try:
+        # Stop service first if it's running
+        if is_service_running():
+            logger.info("Stopping service before removal...")
+            print("Stopping service first...")
             stop_service()
             time.sleep(2)
-        except Exception as e:
-            logger.warning(f"Error stopping service before removal: {e}")
-            
+        
         # Remove service
         win32serviceutil.HandleCommandLine(
             EnterpriseMonitoringService,
@@ -525,10 +681,24 @@ if __name__ == '__main__':
             stop_service()
         elif command == 'remove' or command == 'uninstall':
             remove_service()
+        elif command == 'status':
+            print_service_status()
         elif command == 'restart':
-            stop_service()
-            time.sleep(2)
-            start_service()
+            # Improved restart with status checking
+            if not is_service_installed():
+                print(f"\n✗ ERROR: Cannot restart - service is not installed")
+                print(f"\nTo install the service, run:")
+                print(f"  python service_main.py install")
+            else:
+                print("Restarting service...")
+                # Stop if running
+                if is_service_running():
+                    stop_service()
+                    time.sleep(2)
+                else:
+                    print("Service was not running, starting it now...")
+                # Start
+                start_service()
         elif command == 'debug':
             # Run in debug mode (not as Windows service)
             print("Running in DEBUG mode (not as Windows service)")
