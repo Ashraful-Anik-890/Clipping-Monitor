@@ -350,11 +350,32 @@ def stop_service():
     """Stop the service"""
     try:
         logger.info("Stopping service...")
+        
+        # Check if service is running before attempting to stop
+        try:
+            status = win32serviceutil.QueryServiceStatus(EnterpriseMonitoringService._svc_name_)
+            service_status = status[1]  # Status code is at index 1
+            
+            # 1 = STOPPED, 4 = RUNNING
+            if service_status == 1:
+                logger.info("Service is already stopped")
+                print("Service is already stopped")
+                return True
+        except Exception as e:
+            logger.warning(f"Could not query service status: {e}")
+        
         win32serviceutil.StopService(EnterpriseMonitoringService._svc_name_)
         logger.info("Service stopped successfully")
         print("Service stopped successfully!")
         return True
     except Exception as e:
+        # Check if error is "service not started" - this is not really an error
+        error_msg = str(e)
+        if "1062" in error_msg or "not been started" in error_msg.lower():
+            logger.info("Service was not running")
+            print("Service is not running")
+            return True
+        
         logger.error(f"Failed to stop service: {e}")
         print(f"ERROR: Failed to stop service - {e}")
         return False
@@ -365,25 +386,24 @@ def remove_service():
     try:
         logger.info("Removing service...")
         
-        # Stop service first
-        try:
-            stop_service()
-        except Exception as e:
-            logger.warning(f"Error stopping service before removal: {e}")
+        # Stop service first if it's running
+        logger.info("Checking if service needs to be stopped...")
+        stop_service()
             
         # Remove service
+        print(f"Removing service {EnterpriseMonitoringService._svc_name_}")
         win32serviceutil.HandleCommandLine(
             EnterpriseMonitoringService,
             argv=['', 'remove']
         )
         
         logger.info("Service removed successfully")
-        print("Service removed successfully!")
+        print("\n✓ Service removed successfully!")
         return True
         
     except Exception as e:
         logger.error(f"Failed to remove service: {e}")
-        print(f"ERROR: Failed to remove service - {e}")
+        print(f"\n✗ ERROR: Failed to remove service - {e}")
         return False
 
 
