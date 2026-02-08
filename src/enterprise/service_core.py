@@ -3,6 +3,10 @@ Windows Service Implementation for Enterprise Monitoring Agent - FIXED VERSION
 
 This module implements the core Windows service that runs continuously
 with SYSTEM privileges and cannot be stopped by regular users.
+
+IMPORTANT: Do NOT run this file directly!
+Use service_main.py to install, start, stop, or manage the service.
+Running this file directly will cause service startup errors (Error 1063).
 """
 
 import win32serviceutil
@@ -477,44 +481,3 @@ def remove_service():
         logger.error(f"Failed to remove service: {e}")
         print(f"ERROR: Failed to remove service - {e}")
         return False
-
-
-if __name__ == '__main__':
-    """Main entry point for service control"""
-    
-    if len(sys.argv) == 1:
-        # No arguments - run as service
-        servicemanager.Initialize()
-        servicemanager.PrepareToHostSingle(EnterpriseMonitoringService)
-        servicemanager.StartServiceCtrlDispatcher()
-    else:
-        # Command-line arguments provided
-        command = sys.argv[1].lower()
-        
-        if command == 'install':
-            install_service()
-        elif command == 'start':
-            start_service()
-        elif command == 'stop':
-            stop_service()
-        elif command == 'remove' or command == 'uninstall':
-            remove_service()
-        elif command == 'restart':
-            stop_service()
-            time.sleep(2)
-            start_service()
-        elif command == 'debug':
-            # Run in debug mode
-            print("Running service in debug mode...")
-            print("Press Ctrl+C to stop")
-            try:
-                engine = MonitoringEngine()
-                engine.start_all_monitors()
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                print("\nStopping...")
-                engine.stop_all_monitors()
-        else:
-            # Use default handler for standard service commands
-            win32serviceutil.HandleCommandLine(EnterpriseMonitoringService)
