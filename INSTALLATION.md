@@ -2,6 +2,30 @@
 
 This guide will walk you through the complete process of pulling and setting up the Clipping Monitor on your device.
 
+> **⚡ Quick Setup?** For experienced users, check out [QUICK_SETUP.md](QUICK_SETUP.md) for a condensed version.
+
+## Setup Process Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. Install Prerequisites (Python 3.8+, Git)                │
+│                         ↓                                    │
+│  2. Clone Repository from GitHub                            │
+│                         ↓                                    │
+│  3. Create Virtual Environment                              │
+│                         ↓                                    │
+│  4. Install Dependencies (pip install -r requirements.txt)  │
+│                         ↓                                    │
+│  5. Run Application as Administrator                        │
+│                         ↓                                    │
+│  6. Complete First-Time Setup (Create password)             │
+│                         ↓                                    │
+│  7. Install & Start Windows Service                         │
+│                         ↓                                    │
+│  ✓ Ready to Monitor! 🎉                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Table of Contents
 - [Prerequisites](#prerequisites)
 - [Installation Steps](#installation-steps)
