@@ -56,6 +56,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Windows Service Status Constants
+SERVICE_STOPPED = 1
+SERVICE_RUNNING = 4
+
+# Windows Error Codes
+ERROR_SERVICE_NOT_STARTED = 1062
+
 
 class MonitoringEngine:
     """Core monitoring engine that coordinates all monitoring components"""
@@ -356,8 +363,7 @@ def stop_service():
             status = win32serviceutil.QueryServiceStatus(EnterpriseMonitoringService._svc_name_)
             service_status = status[1]  # Status code is at index 1
             
-            # 1 = STOPPED, 4 = RUNNING
-            if service_status == 1:
+            if service_status == SERVICE_STOPPED:
                 logger.info("Service is already stopped")
                 print("Service is already stopped")
                 return True
@@ -370,8 +376,9 @@ def stop_service():
         return True
     except Exception as e:
         # Check if error is "service not started" - this is not really an error
-        error_msg = str(e)
-        if "1062" in error_msg or "not been started" in error_msg.lower():
+        # Try to get the Windows error code from the exception
+        error_code = getattr(e, 'winerror', None)
+        if error_code == ERROR_SERVICE_NOT_STARTED or "1062" in str(e) or "not been started" in str(e).lower():
             logger.info("Service was not running")
             print("Service is not running")
             return True
