@@ -96,11 +96,28 @@ python build_deployment.py --all
 3. **Configure**: Review and adjust settings in the configuration file if needed.
 
 ### 3. Setting up the Service
+
+⚠️ **IMPORTANT:** Always use `src/enterprise/service_main.py` for service operations!
+
 1. Go to the **Service Control** tab in Admin Console.
 2. Click **"Install Service"** (Blue Button).
    - *Service will be installed with auto-start configuration*
+   - *Uses correct entry point (`service_main.py`)*
 3. Click **"Start Service"** (Green Button).
    - *Status should change to "Running"*
+
+**Alternative: Command Line Installation**
+```powershell
+# Run PowerShell as Administrator
+python src\enterprise\service_main.py install
+net start EnterpriseMonitoringAgent
+```
+
+**Verify Service is Running:**
+```powershell
+sc query EnterpriseMonitoringAgent
+# Should show: STATE: 4 RUNNING
+```
 
 ### 4. Monitoring & Exporting
 - The service runs in the background continuously.
@@ -291,11 +308,14 @@ See **`TROUBLESHOOTING.md`** in the repository root.
 - **Architecture**: Service-based with modular monitors
 - **Status**: Beta - Stable core functionality
 - **Recent Fixes** (2024-02-08):
-  - ✅ **CRITICAL FIX**: Corrected import paths causing immediate service crash
-  - ✅ **CRITICAL FIX**: Service now starts and runs continuously without crashing
+  - ✅ **CRITICAL FIX #1**: Corrected import paths causing immediate service crash
+  - ✅ **CRITICAL FIX #2**: Fixed Error 1063 by removing duplicate entry point from service_core.py
+  - ✅ **CRITICAL FIX #3**: Service now uses correct entry point (service_main.py)
+  - ✅ Service now starts and runs continuously without errors
   - ✅ Fixed hardcoded paths in admin console
   - ✅ Added service import test script (`test_service_imports.py`)
   - ✅ Added comprehensive troubleshooting guide (`TROUBLESHOOTING.md`)
+  - ✅ Added service operations guide (`SERVICE_GUIDE.md`)
   - ✅ Fixed all path-related issues
   - ✅ Added centralized path management
   - ✅ Implemented graceful monitor degradation
